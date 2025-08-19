@@ -13,6 +13,15 @@ local Networking = require(root:WaitForChild("Networking"))
 local Scheduler = require(root:WaitForChild("Scheduler"))
 local Utils = require(root:WaitForChild("Utils"))
 local Commands = require(root:WaitForChild("Commands"))
+local Bans = require(root:WaitForChild("Bans"))
+local RolesStore = require(root:WaitForChild("RolesStore"))
+local GroupAdapter = require(root:WaitForChild("GroupAdapter"))
+local CommandRegistry = require(root:WaitForChild("CommandRegistry"))
+local Targeting = require(root:WaitForChild("Targeting"))
+local Warnings = require(root:WaitForChild("Warnings"))
+local Notes = require(root:WaitForChild("Notes"))
+local Whitelist = require(root:WaitForChild("Whitelist"))
+local ServerState = require(root:WaitForChild("ServerState"))
 
 export type Services = {
 	Config: any,
@@ -23,6 +32,15 @@ export type Services = {
 	Scheduler: any,
 	Utils: any,
 	Commands: any,
+    Bans: any,
+    RolesStore: any,
+    GroupAdapter: any,
+    CommandRegistry: any,
+    Targeting: any,
+    Warnings: any,
+    Notes: any,
+    Whitelist: any,
+    ServerState: any,
 }
 
 local services: Services = {
@@ -34,6 +52,15 @@ local services: Services = {
 	Scheduler = Scheduler,
 	Utils = Utils,
 	Commands = Commands,
+    Bans = Bans,
+    RolesStore = RolesStore,
+    GroupAdapter = GroupAdapter,
+    CommandRegistry = CommandRegistry,
+    Targeting = Targeting,
+    Warnings = Warnings,
+    Notes = Notes,
+    Whitelist = Whitelist,
+    ServerState = ServerState,
 }
 
 function Init.GetServices(): Services
@@ -41,4 +68,3 @@ function Init.GetServices(): Services
 end
 
 return Init
-

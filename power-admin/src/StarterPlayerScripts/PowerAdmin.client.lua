@@ -120,6 +120,24 @@ input.Parent = consolePage
 
 local history: { string } = {}
 local historyIndex = 0
+local registryCache: { [string]: any } = {}
+
+local function fetchRegistry()
+    if next(registryCache) == nil then
+        local data = fnQuery:InvokeServer("listCommands", {})
+        if data and data.ok and type(data.cmds) == "table" then
+            registryCache = data.cmds
+        end
+    end
+    return registryCache
+end
+
+local function getCommandNames()
+    local list = {}
+    for name in pairs(fetchRegistry()) do table.insert(list, name) end
+    table.sort(list)
+    return list
+end
 
 local function pushLine(text: string, isError: boolean?)
     local label = Instance.new("TextLabel")
@@ -144,7 +162,6 @@ input.FocusLost:Connect(function(enterPressed)
     historyIndex = 0
     pushLine("> " .. text)
     input.Text = ""
-    local result = fnQuery:InvokeServer("getMyRole", {})
     evRun:FireServer(text)
 end)
 
@@ -208,6 +225,69 @@ end
 evLog.OnClientEvent:Connect(function(entry)
     addLog(entry)
 end)
+
+-- Simple Autocomplete dropdown
+do
+    local dropdown = Instance.new("Frame")
+    dropdown.Size = UDim2.new(0, 220, 0, 120)
+    dropdown.Position = UDim2.new(0, 8, 1, -165)
+    dropdown.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    dropdown.BorderSizePixel = 0
+    dropdown.Visible = false
+    dropdown.Parent = consolePage
+
+    local list = Instance.new("ScrollingFrame")
+    list.Size = UDim2.new(1, -6, 1, -6)
+    list.Position = UDim2.new(0, 3, 0, 3)
+    list.BackgroundTransparency = 1
+    list.BorderSizePixel = 0
+    list.CanvasSize = UDim2.new(0, 0, 0, 0)
+    list.ScrollBarThickness = 6
+    list.Parent = dropdown
+
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = list
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, 4)
+
+    local function populate(prefix: string)
+        for _, child in ipairs(list:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+        local names = getCommandNames()
+        local count = 0
+        for _, name in ipairs(names) do
+            if string.find(name, prefix, 1, true) == 1 then
+                local btn = Instance.new("TextButton")
+                btn.Size = UDim2.new(1, -4, 0, 22)
+                btn.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+                btn.BorderSizePixel = 0
+                btn.TextXAlignment = Enum.TextXAlignment.Left
+                btn.Font = Enum.Font.Gotham
+                btn.TextSize = 13
+                btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+                btn.Text = name
+                btn.Parent = list
+                btn.MouseButton1Click:Connect(function()
+                    input.Text = ";" .. name .. " "
+                    input:CaptureFocus()
+                    input.CursorPosition = #input.Text + 1
+                    dropdown.Visible = false
+                end)
+                count += 1
+            end
+        end
+        task.wait()
+        list.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
+        dropdown.Visible = count > 0
+    end
+
+    input:GetPropertyChangedSignal("Text"):Connect(function()
+        local text = input.Text
+        if string.sub(text, 1, 1) ~= ";" then dropdown.Visible = false return end
+        local after = string.match(text, ";([^%s]*)") or ""
+        populate(after)
+    end)
+end
 
 -- Players Page (simple roster)
 local playersPage = tabPages["Players"]
