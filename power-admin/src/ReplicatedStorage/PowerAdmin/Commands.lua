@@ -49,31 +49,7 @@ local function register(name: string, fn)
 end
 
 local function findTargets(services, actor: Player, token: string): { Player }
-	-- Use server-side resolution (by name, team, etc.)
-	local targets: { Player } = {}
-	local lower = string.lower(token)
-	if lower == "me" then
-		targets = { actor }
-	elseif lower == "all" then
-		targets = Players:GetPlayers()
-	elseif lower == "others" then
-		for _, p in Players:GetPlayers() do if p ~= actor then table.insert(targets, p) end end
-	elseif string.find(lower, "name:") == 1 then
-		local name = string.sub(lower, 6)
-		for _, p in Players:GetPlayers() do
-			if string.find(string.lower(p.Name), name, 1, true) then table.insert(targets, p) end
-		end
-	elseif string.find(lower, "team:") == 1 then
-		local teamName = string.sub(lower, 6)
-		for _, p in Players:GetPlayers() do
-			if p.Team and string.lower(p.Team.Name) == teamName then table.insert(targets, p) end
-		end
-	else
-		for _, p in Players:GetPlayers() do
-			if string.find(string.lower(p.Name), lower, 1, true) then table.insert(targets, p) end
-		end
-	end
-	return targets
+	return services.Targeting.find(actor, token)
 end
 
 -- Registration
@@ -163,6 +139,36 @@ register("logs", function(ctx)
 	ctx.checkPerm("logs.read")
 	local recent = ctx.services.AuditLog.getRecent(50)
 	return true, "Recent logs: " .. tostring(#recent)
+end)
+
+-- Chat moderation: mute/unmute
+local muted: { [number]: number } = {}
+
+register("mute", function(ctx)
+	ctx.checkPerm("players.mute")
+	local token = ctx.args[2]
+	local duration = ctx.args[3]
+	local untilTs = 0
+	if duration then
+		local secs = ctx.services.Utils.parseDuration(duration)
+		if not secs then error("Invalid duration") end
+		untilTs = os.time() + secs
+	end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do
+		muted[p.UserId] = untilTs
+	end
+	return true, "Muted " .. #targets .. " user(s)"
+end)
+
+register("unmute", function(ctx)
+	ctx.checkPerm("players.mute")
+	local token = ctx.args[2]
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do
+		muted[p.UserId] = nil
+	end
+	return true, "Unmuted " .. #targets .. " user(s)"
 end)
 
 register("tp", function(ctx)
@@ -292,6 +298,42 @@ register("macro-run", function(ctx)
 	local body = macros[name]
 	if not body then error("Macro not found") end
 	return true, body
+end)
+
+-- Announce, PM, Stats, Shutdown
+register("announce", function(ctx)
+	ctx.checkPerm("server.announce")
+	local message = table.concat(ctx.args, " ", 2)
+	if message == "" then error("Usage: ;announce <message>") end
+	for _, p in Players:GetPlayers() do
+		p:SendNotification({ Title = "Announcement", Text = message, Duration = 6 })
+	end
+	return true, "Announced"
+end)
+
+register("pm", function(ctx)
+	ctx.checkPerm("server.pm")
+	local token = ctx.args[2]
+	local message = table.concat(ctx.args, " ", 3)
+	if not token or message == "" then error("Usage: ;pm <player> <message>") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do
+		p:SendNotification({ Title = "PM from " .. ctx.actor.Name, Text = message, Duration = 6 })
+	end
+	return true, "Sent to " .. #targets
+end)
+
+register("stats", function(ctx)
+	ctx.checkPerm("server.stats")
+	local mem = gcinfo()
+	local players = #Players:GetPlayers()
+	return true, string.format("Players=%d Memory=%dKB", players, mem)
+end)
+
+register("shutdown", function(ctx)
+	ctx.checkPerm("server.shutdown")
+	for _, p in Players:GetPlayers() do p:Kick("Server shutting down") end
+	return true, "Shutting down"
 end)
 
 function Commands.execute(actor: Player, services, rawText: string): (boolean, string)

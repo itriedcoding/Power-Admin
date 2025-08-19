@@ -14,45 +14,11 @@ local rateLimitCommand = Services.RateLimiter.createUserLimiter(config.RateLimit
 local rateLimitUI = Services.RateLimiter.createUserLimiter(config.RateLimits.UI)
 
 -- Bans subsystem
-local BanStore = DataStoreService:GetDataStore(config.DataStore.BanStore, config.DataStore.Scope)
-local bans: { [number]: { untilTs: number, reason: string } } = {}
-
-local function loadBans()
-	pcall(function()
-		local data = BanStore:GetAsync("banned")
-		if type(data) == "table" then bans = data end
-	end)
-end
-
-local function saveBans()
-	pcall(function()
-		BanStore:SetAsync("banned", bans)
-	end)
-end
-
-local function isBanned(userId: number): (boolean, string?)
-	local entry = bans[userId]
-	if not entry then return false, nil end
-	if entry.untilTs == 0 then return true, entry.reason end
-	if os.time() < entry.untilTs then return true, entry.reason end
-	-- expired
-	bans[userId] = nil
-	saveBans()
-	return false, nil
-end
-
-local function addBan(userId: number, untilTs: number, reason: string)
-	bans[userId] = { untilTs = untilTs, reason = reason }
-	saveBans()
-end
-
-local function removeBan(userId: number)
-	bans[userId] = nil
-	saveBans()
-end
+local bansSvc = Services.Bans.create(config)
 
 -- Wire up services object that commands expect
 local roleResolver = Services.Permissions.buildUserRoleResolver(config)
+local rolesStore = Services.RolesStore.create(config, roleResolver)
 local services = {
 	Config = config,
 	Permissions = roleResolver,
@@ -62,23 +28,23 @@ local services = {
 	Scheduler = Services.Scheduler.create(),
 	Utils = Services.Utils,
 	Commands = Services.Commands,
-	Bans = {
-		addBan = addBan,
-		removeBan = removeBan,
-		isBanned = isBanned,
-	},
+	Bans = bansSvc,
 }
 
 -- Player join/leave
-loadBans()
+bansSvc.load()
 
 Players.PlayerAdded:Connect(function(player)
-	local banned, reason = isBanned(player.UserId)
+	local banned, reason = bansSvc.isBanned(player.UserId)
 	if banned then
 		player:Kick("Banned: " .. (reason or ""))
 		return
 	end
-	-- default role set lazily when checked
+	-- Apply group-based auto roles, then load stored role
+	pcall(function()
+		Services.GroupAdapter.autoAssign(config, roleResolver, player)
+	end)
+	rolesStore.load(player.UserId)
 end)
 
 -- Remote handling
@@ -110,7 +76,7 @@ networking.Query.OnServerInvoke = function(player, query: string, data)
 	elseif query == "getMyRole" then
 		return { ok = true, role = roleResolver.getRole(player.UserId) }
 	elseif query == "listCommands" then
-		return { ok = true, cmds = { "help", "cmds", "grant", "revoke", "kick", "ban", "unban", "tban", "logs", "tp", "bring", "freeze", "thaw", "speed", "health", "alias", "macro", "macro-run" } }
+		return { ok = true, cmds = Services.CommandRegistry.get() }
 	end
 	return { ok = false, error = "unknown" }
 end

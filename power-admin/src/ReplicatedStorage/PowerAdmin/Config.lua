@@ -30,6 +30,10 @@ Config.Roles = {
 			"players.speed",
 			"players.health",
 			"logs.read",
+			"players.mute",
+			"server.announce",
+			"server.pm",
+			"server.stats",
 		},
 	},
 	Moderator = {
@@ -43,6 +47,7 @@ Config.Roles = {
 			"players.speed",
 			"players.health",
 			"logs.read",
+			"players.mute",
 		},
 	},
 	Member = {
@@ -67,6 +72,11 @@ Config.DataStore = {
 	Scope = "PowerAdminV1",
 	BanStore = "Bans",
 	AuditStore = "Audits",
+}
+
+-- Optional: Group role mapping: [groupId] = { [minRank] = RoleName }
+Config.GroupRoles = {
+	-- [1234567] = { [255] = "Owner", [200] = "Admin", [100] = "Moderator" }
 }
 
 -- Rate limits per user per minute
