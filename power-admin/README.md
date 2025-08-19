@@ -11,6 +11,8 @@ An advanced, production-grade admin system for Roblox games. Built with Luau. Se
 - Real-time panel UI: Console, Players, Logs, and Settings with autocomplete and history
 - Scheduler for temporary punishments and timed tasks
 - Safe networking: no trust in client, server-only authority
+- Staff tooling: warnings, notes, mute/unmute, announcements, private messages
+- Whitelist + server lock, group-rank auto roles, and persisted roles
 
 ### Folder Structure
 ```
@@ -26,11 +28,22 @@ power-admin/
       │       ├─ Networking.lua
       │       ├─ Scheduler.lua
       │       ├─ Utils.lua
-      │       └─ Commands.lua
+      │       ├─ Commands.lua
+      │       ├─ Bans.lua
+      │       ├─ RolesStore.lua
+      │       ├─ GroupAdapter.lua
+      │       ├─ Targeting.lua
+      │       ├─ CommandRegistry.lua
+      │       ├─ Warnings.lua
+      │       ├─ Notes.lua
+      │       ├─ Whitelist.lua
+      │       ├─ ServerState.lua
+      │       └─ README_EXTRA.md
       ├─ ServerScriptService/
       │   └─ PowerAdmin.server.lua
       └─ StarterPlayerScripts/
-          └─ PowerAdmin.client.lua
+          ├─ PowerAdmin.client.lua
+          └─ AutoComplete.lua
 ```
 
 ### Installation
@@ -52,6 +65,7 @@ Edit `Config.lua`:
 - `DefaultRole`: The fallback role for new players.
 - `FeatureFlags`: Toggle optional behaviors (webhooks, strict targeting, etc.).
 - `Webhook`: Discord webhook URL (optional). Leave empty to disable.
+- `GroupRoles`: Optional group rank-to-role mapping.
 
 ### Core Commands
 - `;help [command?]`: Shows help or details for a command.
@@ -67,6 +81,16 @@ Edit `Config.lua`:
 - `;health <playerTarget> <number>`
 - `;macro <name> <command;command;...>` then `;macro-run <name> [args...]`
 - `;alias <name> <command>`
+
+### Advanced Commands
+- `;mute <player> [duration]` / `;unmute <player>`
+- `;warn <player> [reason]`, `;warns <player>`, `;unwarn <player>`
+- `;note <player> <text>`, `;notes <player>`
+- `;announce <message>`
+- `;pm <player> <message>`
+- `;stats`
+- `;wlist <add|remove|list> [userId]`
+- `;lock`, `;unlock`
 
 You can chain commands with `;`, for example: `;freeze me;tp me name:Alice`.
 

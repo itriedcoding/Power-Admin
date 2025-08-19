@@ -15,6 +15,10 @@ local rateLimitUI = Services.RateLimiter.createUserLimiter(config.RateLimits.UI)
 
 -- Bans subsystem
 local bansSvc = Services.Bans.create(config)
+local warningsSvc = Services.Warnings.create(config)
+local notesSvc = Services.Notes.create(config)
+local whitelistSvc = Services.Whitelist.create(config)
+local serverState = Services.ServerState.create()
 
 -- Wire up services object that commands expect
 local roleResolver = Services.Permissions.buildUserRoleResolver(config)
@@ -29,15 +33,25 @@ local services = {
 	Utils = Services.Utils,
 	Commands = Services.Commands,
 	Bans = bansSvc,
+    Warnings = warningsSvc,
+    Notes = notesSvc,
+    Whitelist = whitelistSvc,
+    ServerState = serverState,
 }
 
 -- Player join/leave
+bins = nil
 bansSvc.load()
+whitelistSvc.load()
 
 Players.PlayerAdded:Connect(function(player)
 	local banned, reason = bansSvc.isBanned(player.UserId)
 	if banned then
 		player:Kick("Banned: " .. (reason or ""))
+		return
+	end
+	if serverState.isLocked() and not whitelistSvc.isWhitelisted(player.UserId) then
+		player:Kick("Server locked. You are not whitelisted.")
 		return
 	end
 	-- Apply group-based auto roles, then load stored role
@@ -77,6 +91,8 @@ networking.Query.OnServerInvoke = function(player, query: string, data)
 		return { ok = true, role = roleResolver.getRole(player.UserId) }
 	elseif query == "listCommands" then
 		return { ok = true, cmds = Services.CommandRegistry.get() }
+    elseif query == "serverState" then
+        return { ok = true, locked = serverState.isLocked() }
 	end
 	return { ok = false, error = "unknown" }
 end

@@ -34,6 +34,12 @@ Config.Roles = {
 			"server.announce",
 			"server.pm",
 			"server.stats",
+			"notes.write",
+			"notes.read",
+			"warnings.add",
+			"warnings.view",
+			"whitelist.manage",
+			"server.lock",
 		},
 	},
 	Moderator = {
@@ -48,6 +54,8 @@ Config.Roles = {
 			"players.health",
 			"logs.read",
 			"players.mute",
+			"notes.read",
+			"warnings.view",
 		},
 	},
 	Member = {

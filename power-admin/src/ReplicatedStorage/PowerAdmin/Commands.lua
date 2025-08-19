@@ -336,6 +336,96 @@ register("shutdown", function(ctx)
 	return true, "Shutting down"
 end)
 
+-- Warnings & Notes
+register("warn", function(ctx)
+	ctx.checkPerm("warnings.add")
+	local token = ctx.args[2]
+	local reason = table.concat(ctx.args, " ", 3)
+	if not token then error("Usage: ;warn <player> [reason]") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do ctx.services.Warnings.add(p.UserId, ctx.actor.UserId, reason) end
+	return true, "Warned " .. #targets .. " user(s)"
+end)
+
+register("warns", function(ctx)
+	ctx.checkPerm("warnings.view")
+	local token = ctx.args[2]
+	if not token then error("Usage: ;warns <player>") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	local lines = {}
+	for _, p in targets do
+		local list = ctx.services.Warnings.list(p.UserId)
+		table.insert(lines, p.Name .. ": " .. tostring(#list) .. " warn(s)")
+	end
+	return true, table.concat(lines, "; ")
+end)
+
+register("unwarn", function(ctx)
+	ctx.checkPerm("warnings.add")
+	local token = ctx.args[2]
+	if not token then error("Usage: ;unwarn <player>") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do ctx.services.Warnings.removeOne(p.UserId) end
+	return true, "Unwarned one from each target"
+end)
+
+register("note", function(ctx)
+	ctx.checkPerm("notes.write")
+	local token = ctx.args[2]
+	local text = table.concat(ctx.args, " ", 3)
+	if not token or text == "" then error("Usage: ;note <player> <text>") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	for _, p in targets do ctx.services.Notes.add(p.UserId, ctx.actor.UserId, text) end
+	return true, "Noted " .. #targets .. " user(s)"
+end)
+
+register("notes", function(ctx)
+	ctx.checkPerm("notes.read")
+	local token = ctx.args[2]
+	if not token then error("Usage: ;notes <player>") end
+	local targets = findTargets(ctx.services, ctx.actor, token)
+	local lines = {}
+	for _, p in targets do
+		local list = ctx.services.Notes.list(p.UserId)
+		table.insert(lines, p.Name .. ": " .. tostring(#list) .. " note(s)")
+	end
+	return true, table.concat(lines, "; ")
+end)
+
+-- Whitelist and Lock
+register("wlist", function(ctx)
+	ctx.checkPerm("whitelist.manage")
+	local op = string.lower(ctx.args[2] or "")
+	if op == "add" then
+		local id = tonumber(ctx.args[3] or "")
+		if not id then error("Usage: ;wlist add <userId>") end
+		ctx.services.Whitelist.add(id)
+		return true, "Whitelisted " .. id
+	elseif op == "remove" then
+		local id = tonumber(ctx.args[3] or "")
+		if not id then error("Usage: ;wlist remove <userId>") end
+		ctx.services.Whitelist.remove(id)
+		return true, "Removed " .. id
+	elseif op == "list" then
+		local ids = ctx.services.Whitelist.list()
+		return true, "Whitelist: " .. table.concat(ids, ", ")
+	else
+		error("Usage: ;wlist <add|remove|list> [userId]")
+	end
+end)
+
+register("lock", function(ctx)
+	ctx.checkPerm("server.lock")
+	ctx.services.ServerState.setLocked(true)
+	return true, "Server locked"
+end)
+
+register("unlock", function(ctx)
+	ctx.checkPerm("server.lock")
+	ctx.services.ServerState.setLocked(false)
+	return true, "Server unlocked"
+end)
+
 function Commands.execute(actor: Player, services, rawText: string): (boolean, string)
 	local text = string.gsub(rawText, "^;", "")
 	local parts = {}

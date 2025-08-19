@@ -25,6 +25,14 @@ local registry: { [string]: { desc: string, perm: string?, args: { string }?, ca
 	alias = { desc = "Define alias", perm = "players.grant", args = {"<name>", "<command>"}, category = "Core" },
 	macro = { desc = "Define macro", perm = "players.grant", args = {"<name>", "<cmd;cmd;...>"}, category = "Core" },
 	["macro-run"] = { desc = "Run macro", args = {"<name>"}, category = "Core" },
+    warn = { desc = "Warn a player", perm = "warnings.add", args = {"<player>", "[reason]"}, category = "Moderation" },
+    warns = { desc = "List warnings", perm = "warnings.view", args = {"<player>"}, category = "Moderation" },
+    unwarn = { desc = "Remove a warning", perm = "warnings.add", args = {"<player>"}, category = "Moderation" },
+    note = { desc = "Add a staff note", perm = "notes.write", args = {"<player>", "<text>"}, category = "Moderation" },
+    notes = { desc = "List notes", perm = "notes.read", args = {"<player>"}, category = "Moderation" },
+    wlist = { desc = "Whitelist ops", perm = "whitelist.manage", args = {"<add|remove|list>", "[userId]"}, category = "Access" },
+    lock = { desc = "Lock server (whitelist only)", perm = "server.lock", category = "Access" },
+    unlock = { desc = "Unlock server", perm = "server.lock", category = "Access" },
 }
 
 function CommandRegistry.get()

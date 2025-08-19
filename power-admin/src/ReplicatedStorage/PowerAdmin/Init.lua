@@ -18,6 +18,10 @@ local RolesStore = require(root:WaitForChild("RolesStore"))
 local GroupAdapter = require(root:WaitForChild("GroupAdapter"))
 local CommandRegistry = require(root:WaitForChild("CommandRegistry"))
 local Targeting = require(root:WaitForChild("Targeting"))
+local Warnings = require(root:WaitForChild("Warnings"))
+local Notes = require(root:WaitForChild("Notes"))
+local Whitelist = require(root:WaitForChild("Whitelist"))
+local ServerState = require(root:WaitForChild("ServerState"))
 
 export type Services = {
 	Config: any,
@@ -33,6 +37,10 @@ export type Services = {
     GroupAdapter: any,
     CommandRegistry: any,
     Targeting: any,
+    Warnings: any,
+    Notes: any,
+    Whitelist: any,
+    ServerState: any,
 }
 
 local services: Services = {
@@ -49,6 +57,10 @@ local services: Services = {
     GroupAdapter = GroupAdapter,
     CommandRegistry = CommandRegistry,
     Targeting = Targeting,
+    Warnings = Warnings,
+    Notes = Notes,
+    Whitelist = Whitelist,
+    ServerState = ServerState,
 }
 
 function Init.GetServices(): Services
@@ -56,4 +68,3 @@ function Init.GetServices(): Services
 end
 
 return Init
-
